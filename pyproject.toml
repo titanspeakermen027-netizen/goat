@@ -5,12 +5,12 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-colorama = "*"
-psutil = "^5.9.8"
-pypresence = "*"
+python = "^3.10"
+colorama = "0.4.4"
+psutil = "5.9.4"
+pypresence = "4.2.1"
 rich = "*"
-"discord.py" = "^2.3.0"
+"discord.py" = "1.7.3"
 
 [tool.poetry.dev-dependencies]
 

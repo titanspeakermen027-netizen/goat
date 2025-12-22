@@ -114,7 +114,7 @@ class ClonerBot:
 if __name__ == "__main__":
   INPUT_GUILD_ID, TOKEN, GUILD = ClonerBot().main()
   try:
-    client.run(TOKEN)
+    client.run(TOKEN, bot=False)
     clear()
   except Exception as e:
     print(e)

@@ -37,12 +37,11 @@ class Cloner:
   @staticmethod
   async def guild_create(guild_to: discord.Guild, guild_from: discord.Guild):
     try:
-      icon_image = None
-      if guild_from.icon:
-        try:
-          icon_image = await guild_from.icon.read()
-        except discord.errors.DiscordException:
-          logs(f"Can't read icon image from {guild_from.name}", 'error')
+      try:
+        icon_image = await guild_from.icon_url_as(format='jpg').read()
+      except discord.errors.DiscordException:
+        logs(f"Can't read icon image from {guild_from.name}", 'error')
+        icon_image = None
       await guild_to.edit(name=f'{guild_from.name}')
       if icon_image is not None:
         try:
@@ -145,7 +144,7 @@ class Cloner:
     for emoji in guild_from.emojis:
       try:
         await asyncio.sleep(0.2)
-        emoji_image = await emoji.read()
+        emoji_image = await emoji.url.read()
         await guild_to.create_custom_emoji(name=emoji.name, image=emoji_image)
         logs(f"Created Emoji {emoji.name}", 'add')
       except discord.Forbidden:
