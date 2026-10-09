@@ -40,7 +40,7 @@ async def clone_server():
     # Edit the server name and icon
     await Cloner.guild_create(guild_to, guild_from)
     
-    await Cloner.channels_delete(guild_to)
+    
     if data["copy_settings"]["roles"]:
         await Cloner.roles_create(guild_to, guild_from)
     if data["copy_settings"]["categories"]:

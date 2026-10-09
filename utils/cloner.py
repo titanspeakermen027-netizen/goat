@@ -73,17 +73,6 @@ class Cloner:
         logs(f"Error creating role {role.name}: {e}", 'error')
     logs(f"Created Roles: {roles_created}", 'add', True)
 
-  @staticmethod
-  async def channels_delete(guild_to: discord.Guild):
-    channels = guild_to.channels
-    channels_deleted = len(channels)
-    for channel in channels:
-      try:
-        await channel.delete()
-        logs(f"Deleted Channel: {channel.name}", 'delete')
-      except (discord.Forbidden, discord.HTTPException) as e:
-        logs(f"Error deleting channel {channel.name}: {e}", 'error')
-    logs(f"Deleted Channels: {channels_deleted}", 'delete', True)
 
   @staticmethod
   async def categories_create(guild_to: discord.Guild,
