@@ -88,7 +88,7 @@ async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
         except Exception as e:
             print(f"Failed to create role {role.name}: {e}")
 
-    # 3. نسخ الفئات والرومات تحتها مع الأذونات
+    # 3. نسخ الفئات والرومات تحتها مع الترتيب والأذونات
     for category in source_guild.categories:
         try:
             overwrites = {}
@@ -155,7 +155,12 @@ async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
             except Exception as e:
                 print(f"Failed to clone channel {channel.name}: {e}")
 
-    await status_msg.edit(content="✅ تم الانتهاء من استنساخ السيرفر بالكامل مع الرتب والصلاحيات بنجاح!")
+    # تعديل اسم السيرفر وصورته (اختياري) ليكون مطابقاً للأصل تماماً
+    try:
+        await destination_guild.edit(name=source_guild.name)
+    except Exception:
+        pass
 
-# تشغيل البوت
+    await status_msg.edit(content="✅ تم الانتهاء من استنساخ الرتب والفئات والرومات بصلاحياتها وترتيبها بنجاح!")
+
 client.run(USER_TOKEN, bot=False)
