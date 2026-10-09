@@ -1,34 +1,47 @@
+import os
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
-# استخدام مكتبة Self-bot
+# تحميل المتغيرات من ملف .env
+load_dotenv()
+USER_TOKEN = os.getenv("USER_TOKEN")
+
+if not USER_TOKEN:
+    print("❌ خطأ: لم يتم العثور على توكن الحساب في ملف .env!")
+    exit()
+
+# إعدادات السلف-بوت
 client = commands.Bot(command_prefix="!", self_bot=True)
 
 @client.event
 async def on_ready():
     print(f"Logged in successfully as: {client.user} (ID: {client.user.id})")
     print("--------------------------------------------------")
-    print("جاهز لعملية الاستنساخ! اكتب الأمر داخل أي سيرفر تملك صلاحيات فيه:")
-    print("!clone <source_guild_id> <target_guild_id>")
+    print("السكربت جاهز! اكتب الأمر التالي في سيرفرك الجديد:")
+    print("!clone <ID_السيرفر_المراد_نسخه> <ID_السيرفر_الجديد>")
 
 @client.command(name="clone")
 async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
-    await ctx.message.delete()
+    try:
+        await ctx.message.delete()
+    except Exception:
+        pass
     
     source_guild = client.get_guild(source_guild_id)
     destination_guild = client.get_guild(target_guild_id)
 
     if not source_guild:
-        await ctx.send("❌ لم أتمكن من العثور على السيرفر المراد نسخه. تأكد أن حسابك موجود فيه!", delete_after=10)
+        await ctx.send("❌ لم أتمكن من العثور على السيرفر المراد نسخه. تأكد أن حسابك عضو فيه!", delete_after=10)
         return
 
     if not destination_guild:
-        await ctx.send("❌ لم أتمكن من العثور على السيرفر الجديد. تأكد أن حسابك موجود فيه ولديك صلاحيات الإدارة!", delete_after=10)
+        await ctx.send("❌ لم أتمكن من العثور على السيرفر الجديد. تأكد أنك موجود فيه وتملك صلاحيات الإدارة!", delete_after=10)
         return
 
     status_msg = await ctx.send(f"🔄 جاري بدء استنساخ سيرفر **{source_guild.name}** إلى **{destination_guild.name}**...")
 
-    # 1. تنظيف السيرفر الجديد من الرومات والرتب القديمة (اختياري)
+    # 1. تنظيف السيرفر الجديد من الرومات والرتب القديمة
     for channel in destination_guild.channels:
         try:
             await channel.delete()
@@ -42,7 +55,7 @@ async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
             except Exception:
                 pass
 
-    # 2. نسخ الرتب بترتيب تنازلي
+    # 2. نسخ وترتيب الرتب مع الصلاحيات بدقة
     role_mapping = {}
     sorted_roles = sorted(source_guild.roles, key=lambda r: r.position, reverse=True)
     
@@ -75,7 +88,7 @@ async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
         except Exception as e:
             print(f"Failed to create role {role.name}: {e}")
 
-    # 3. نسخ الفئات والرومات
+    # 3. نسخ الفئات والرومات تحتها مع الأذونات
     for category in source_guild.categories:
         try:
             overwrites = {}
@@ -142,8 +155,7 @@ async def clone_server(ctx, source_guild_id: int, target_guild_id: int):
             except Exception as e:
                 print(f"Failed to clone channel {channel.name}: {e}")
 
-    await status_msg.edit(content="✅ تم الانتهاء من استنساخ السيرفر بنجاح عبر حسابك الشخصي!")
+    await status_msg.edit(content="✅ تم الانتهاء من استنساخ السيرفر بالكامل مع الرتب والصلاحيات بنجاح!")
 
-# ضع توكن حسابك هنا (ملاحظة: لا تشاركه مع أي شخص أبداً)
-TOKEN = input("أدخل توكن حسابك الشخصي هنا: ")
-client.run(TOKEN, bot=False)
+# تشغيل البوت
+client.run(USER_TOKEN, bot=False)
