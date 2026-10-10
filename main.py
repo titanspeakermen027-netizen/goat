@@ -38,6 +38,6 @@ class MyClient(discord.Client):
 client = MyClient()
 
 if TOKEN:
-    client.run(TOKEN, bot=False)
+    client.run(TOKEN)
 else:
     print("خطأ: لم يتم العثور على التوكن في ملف .env")
