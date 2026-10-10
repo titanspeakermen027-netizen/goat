@@ -1,39 +1,40 @@
 import os
 import asyncio
 import discord
-from discord.ext import tasks
 from dotenv import load_dotenv
 
 # تحميل المتغيرات من ملف .env
 load_dotenv()
 
-# جلب التوكن من ملف .env بأمان
+# جلب التوكن من ملف .env
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# آيدي الروم الذي تريد إظهار حالة الكتابة فيه
-CHANNEL_ID = 1538885237159891054
+# اسم اللعبة
+GAME_NAME = "Ƙinɣdøm Of Aphamia  🏰"
+
+# رابط الصورة التي أرفقتها (بعد رفعها على موقع مثل Imgur وضعي رابطها المباشر)
+# يمكنك وضع رابط صورة مباشر (يبدأ بـ https:// وينتهي بـ .jpg أو .png)
+IMAGE_URL = "https://images-ext-1.discordapp.net/external/9BnrFcgAy-5tAi0-SbVovH7C8hJkp3XeaWP2Feh-uAw/https/cdn.discordapp.com/icons/1412468404954337423/b8e95eae828bcf31cfbdb91e7ea0cabc.webp" 
 
 class MyClient(discord.Client):
-    async def setup_hook(self):
-        self.keep_typing.start()
-
     async def on_ready(self):
         print(f"تم تسجيل الدخول بنجاح باسم: {self.user}")
-
-    @tasks.loop(seconds=5.0)
-    async def keep_typing(self):
-        channel = self.get_channel(CHANNEL_ID)
-        if channel:
-            try:
-                # إرسال إشارة الكتابة بشكل مستمر
-                async with channel.typing():
-                    await asyncio.sleep(5)
-            except Exception as e:
-                print(f"حدث خطأ أثناء الكتابة: {e}")
-
-    @keep_typing.before_loop
-    async def before_keep_typing(self):
-        await self.wait_until_ready()
+        
+        # إعداد حالة اللعب (Activity)
+        activity = discord.Activity(
+            type=discord.ActivityType.playing, # نوع النشاط: يمارس لعبة (Playing)
+            name=GAME_NAME,                    # اسم اللعبة
+            details="Playing Ƙinɣdøm Of Aphamia", # التفاصيل الفرعية
+            state="In Game 🏰",                # الحالة الفرعية
+            assets={
+                "large_image": IMAGE_URL,      # رابط الصورة الكبيرة
+                "large_text": GAME_NAME        # النص الذي يظهر عند وضع الماوس على الصورة
+            }
+        )
+        
+        # تطبيق الحالة على الحساب
+        await self.change_presence(activity=activity)
+        print(f"تم تفعيل حالة اللعب: {GAME_NAME}")
 
 client = MyClient()
 
