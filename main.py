@@ -10,7 +10,10 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = 1538885237159891054
 COUNTER_FILE = "message_counter.json"
 
-client = discord.Client()
+intents = discord.Intents.default()
+intents.message_content = True  # مفيد لقراءة محتوى الرسائل
+
+client = discord.Client(intents=intents)
 
 def load_counter():
     """تحميل العداد السابق من الملف لتفادي فقدان التقدم عند إعادة التشغيل"""
