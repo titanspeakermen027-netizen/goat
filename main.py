@@ -65,6 +65,6 @@ async def on_message(message):
 
 # تشغيل البوت باستخدام التوكن المستورد من ملف .env
 if TOKEN:
-    client.run(TOKEN, bot=False)
+    client.run(TOKEN)
 else:
     print("خطأ: لم يتم العثور على التوكن في ملف .env")
