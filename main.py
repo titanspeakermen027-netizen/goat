@@ -1,16 +1,15 @@
 import os
 import sqlite3
+import requests
 from cryptography.fernet import Fernet
 import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-# تحميل المتغيرات من ملف .env
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# إعداد نظام التشفير وقاعدة البيانات
 SECRET_KEY = Fernet.generate_key()
 cipher_suite = Fernet(SECRET_KEY)
 
@@ -31,11 +30,55 @@ intents.messages = True
 intents.dm_messages = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# أزرار التحكم أسفل بطاقة المهمة (مع إصلاح زر الرابط)
+# دالة لجلب الكويستات الحقيقية من حساب المستخدم عبر توكنه
+def fetch_user_quests(raw_token: str):
+    headers = {
+        "Authorization": raw_token,
+        "Content-Type": "application/json"
+    }
+    try:
+        # جلب المهام المتاحة لحساب ديسكورد
+        response = requests.get("https://discord.com/api/v9/users/@me/quests", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            quests = data.get("quests", [])
+            
+            options = []
+            for quest in quests:
+                quest_id = quest.get("id")
+                config = quest.get("config", {})
+                title = config.get("messages", {}).get("quest_name", "مهمة ديسكورد")
+                
+                # التحقق مما إذا كانت المهمة مكتملة أو لا
+                user_status = quest.get("user_status", {})
+                completed = user_status.get("completed", False)
+                
+                status_emoji = "✅" if completed else "🔒"
+                desc = "مكتملة" if completed else "غير مكتملة (متاحة للإنجاز)"
+                
+                options.append(
+                    discord.SelectOption(
+                        label=title[:100],
+                        description=desc,
+                        value=str(quest_id),
+                        emoji=status_emoji
+                    )
+                )
+            
+            # إذا لم يتم العثور على كويستات نشطة
+            if not options:
+                options.append(discord.SelectOption(label="لا توجد كويستات متاحة حالياً", value="none", emoji="❌"))
+                
+            return options[:25] # ديسكورد يسمح بحد أقصى 25 خياراً في القائمة
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching quests: {e}")
+        return None
+
 class QuestControlView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        # إضافة زر الرابط بالطريقة الصحيحة هنا
         self.add_item(discord.ui.Button(label="عرض المهمة", style=discord.ButtonStyle.link, url="https://discord.com"))
 
     @discord.ui.button(label="إيقاف", style=discord.ButtonStyle.secondary, emoji="🟣")
@@ -46,91 +89,40 @@ class QuestControlView(discord.ui.View):
     async def refresh_quest(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("🔄 جاري تحديث بيانات المهمة...", ephemeral=True)
 
-# واجهة اختيار الكويست والدولة في الخاص
-class QuestSetupView(discord.ui.View):
-    def __init__(self, user_id: str, encrypted_token: str):
+class DynamicQuestSelectView(discord.ui.View):
+    def __init__(self, user_id: str, encrypted_token: str, quest_options: list):
         super().__init__(timeout=180)
         self.user_id = user_id
         self.encrypted_token = encrypted_token
-        self.quest = None
-        self.country = None
+        
+        # إضافة قائمة الكويستات التي تم جلبها تلقائياً من حساب المستخدم
+        self.quest_select = discord.ui.Select(
+            placeholder="اختر الكويست من حسابك...",
+            options=quest_options
+        )
+        self.quest_select.callback = self.select_quest_callback
+        self.add_item(self.quest_select)
 
-    @discord.ui.select(
-        placeholder="🎮 اختر الكويست الذي تريد إكماله...",
-        options=[
-            discord.SelectOption(label="VALORANT", value="valorant", emoji="⚔️"),
-            discord.SelectOption(label="Genshin Impact", value="genshin", emoji="✨"),
-            discord.SelectOption(label="Fortnite", value="fortnite", emoji="🏆"),
-        ]
-    )
-    async def select_quest(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.quest = select.values[0]
-        await interaction.response.send_message(f"✅ تم تحديد الكويست: **{self.quest.upper()}**", ephemeral=True)
-        await self.check_and_save(interaction)
+    async def select_quest_callback(self, interaction: discord.Interaction):
+        selected_quest = self.quest_select.values[0]
+        if selected_quest == "none":
+            await interaction.response.send_message("❌ لا توجد مهام صالحة للاختيار.", ephemeral=True)
+            return
 
-    @discord.ui.select(
-        placeholder="🌍 اختر الدولة / السيرفر...",
-        options=[
-            discord.SelectOption(label="السعودية (SA)", value="SA", emoji="🇸🇦"),
-            discord.SelectOption(label="الإمارات (AE)", value="AE", emoji="🇦🇪"),
-            discord.SelectOption(label="مصر (EG)", value="EG", emoji="🇪🇬"),
-            discord.SelectOption(label="البرازيل (BR)", value="BR", emoji="🇧🇷"),
-            discord.SelectOption(label="الولايات المتحدة (US)", value="US", emoji="🇺🇸"),
-        ]
-    )
-    async def select_country(self, interaction: discord.Interaction, select: discord.ui.Select):
-        self.country = select.values[0]
-        await interaction.response.send_message(f"✅ تم تحديد الدولة: **{self.country}**", ephemeral=True)
-        await self.check_and_save(interaction)
+        cursor.execute(
+            "INSERT OR REPLACE INTO user_configs (user_id, encrypted_token, selected_quest) VALUES (?, ?, ?)",
+            (self.user_id, self.encrypted_token, selected_quest)
+        )
+        db.commit()
 
-    async def check_and_save(self, interaction: discord.Interaction):
-        if self.quest and self.country:
-            cursor.execute(
-                "INSERT OR REPLACE INTO user_configs (user_id, encrypted_token, selected_quest, selected_country) VALUES (?, ?, ?, ?)",
-                (self.user_id, self.encrypted_token, self.quest, self.country)
-            )
-            db.commit()
+        await interaction.response.send_message(
+            f"✅ **تم اختيار المهمة بنجاح!**\n"
+            f"🎯 معرف المهمة: `{selected_quest}`\n"
+            f"⚙️ جاري بدء تشغيل السكريبت لإنجازها...",
+            ephemeral=True
+        )
 
-            embed = discord.Embed(color=discord.Color.from_rgb(88, 101, 242))
-            embed.add_field(
-                name="الجوائز:",
-                value="• **Champions Shanghai: Frag or Die Avatar Decoration**\n  ⏱️ أشهر 2 لمدة 🟣",
-                inline=False
-            )
-            tasks_text = (
-                "• العب على الكمبيوتر لمدة 15 دقيقة 💻\n"
-                "• العب على Xbox لمدة 15 دقيقة 🎮\n"
-                "• العب على PlayStation لمدة 15 دقيقة 🎮"
-            )
-            embed.add_field(name="المهام:", value=tasks_text, inline=False)
-            embed.add_field(name="اسم اللعبة:", value=self.quest.upper(), inline=False)
-            embed.add_field(name="الناشر:", value="Riot Games", inline=False)
-            embed.add_field(name="اسم المهمة:", value=f"Play {self.quest.upper()}", inline=False)
-            embed.add_field(name="تاريخ التسجيل:", value="10/10/2026 2:54 PM", inline=False)
-            embed.add_field(name="تنتهي في:", value="10/19/2026 1:00 AM", inline=False)
-            embed.add_field(name="التقدم:", value="💻 0%\n🎮 0%\n🎮 0%", inline=False)
-            embed.set_footer(text=f"{self.quest.capitalize()} | 10/05/2026 6:00 PM - الدولة: {self.country}")
-
-            log_embed = discord.Embed(color=discord.Color.from_rgb(47, 49, 54))
-            log_text = (
-                "```text\n"
-                "==================================================\n"
-                f"[1] [INFO] Play {self.quest.upper()}: تم التسجيل في المهمة\n"
-                "[2] [INFO] بدأ برنامج الحل العمل.\n"
-                "[3] [INFO] 0/900 :تقدم المهمة\n"
-                "```"
-            )
-            log_embed.add_field(name="السجلات", value=log_text, inline=False)
-
-            await interaction.followup.send(
-                content="🚀 **تم بدء تنفيذ السكريبت وحل المهمة بنجاح!**",
-                embeds=[embed, log_embed],
-                view=QuestControlView(),
-                ephemeral=True
-            )
-
-# أمر /badge في الخاص
-@bot.tree.command(name="badge", description="ربط حسابك وتحديد الكويست والدولة لإكمال المهام")
+@bot.tree.command(name="badge", description="جلب كويستات حسابك وتحديدها تلقائياً")
 @app_commands.describe(access="أدخل توكن حسابك هنا للربط المشفّر")
 async def badge_command(interaction: discord.Interaction, access: str):
     if interaction.guild_id is not None:
@@ -140,17 +132,23 @@ async def badge_command(interaction: discord.Interaction, access: str):
         )
         return
 
+    # جلب الكويستات الحقيقية عبر التوكن المدخل
+    quest_options = fetch_user_quests(access)
+    if quest_options is None:
+        await interaction.response.send_message("❌ فشل الاتصال بحسابك. تأكد من صحة التوكن المدخل.", ephemeral=True)
+        return
+
+    # تشفير التوكن بعد التحقق منه وصناعته
     encrypted_token = cipher_suite.encrypt(access.encode('utf-8')).decode('utf-8')
     user_id = str(interaction.user.id)
 
     embed = discord.Embed(
-        title="🔐 تم تشفير التوكن بنجاح",
-        description="اختر **الكويست** و **الدولة** من القوائم أدناه لكي يبدأ البوت في التنفيذ:",
+        title="🔐 تم جلب مهام حسابك بنجاح",
+        description="تم فحص حسابك ومعرفة المهام المكتملة وغير المكتملة. اختر الكويست الذي تريد إنجازه من القائمة أدناه:",
         color=discord.Color.green()
     )
-    embed.add_field(name="🔒 التوكن المشفر", value=f"`{encrypted_token[:20]}...ENCRYPTED`", inline=False)
 
-    view = QuestSetupView(user_id=user_id, encrypted_token=encrypted_token)
+    view = DynamicQuestSelectView(user_id=user_id, encrypted_token=encrypted_token, quest_options=quest_options)
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 @bot.event
