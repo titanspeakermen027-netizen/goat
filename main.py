@@ -3,37 +3,39 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 
+# تحميل البيانات من ملف .env
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+# إنشاء كائن السيلف بوت
 bot = commands.Bot(command_prefix="!", self_bot=True)
 
 @bot.event
 async def on_ready():
+    print(f"==========================================")
     print(f"تم تسجيل الدخول بنجاح باسم: {bot.user}")
+    print(f"==========================================")
 
-    # رابط صورة اللعبة المرفق
-    IMAGE_URL = "https://cdn.discordapp.com/attachments/1538885237159891054/1558942913063559318/b8e95eae828bcf31cfbdb91e7ea0cabc.webp?ex=6acd463a&is=6acbf4ba&hm=117099c87620a2622f937722159bc7f1301ac4150f7f9f0ab579b7b17cd58568&"
-
-    # إنشاء النشاط وتحديد الاسم والصورة
+    # إعداد الـ Rich Presence بالمعلومات المطلوبة
     activity = discord.Activity(
         type=discord.ActivityType.playing,
-        name="شششششش انا عمك",
-        details="مالي دخل",  # النص الذي يظهر تحت اسم اللعبة (اختياري)
-        state="قلت لك",  # النص الفرعي الثاني (اختياري)
+        name="Ƙinɣdøm Of Aphamia  🏰",
+        application_id=1558946040806117457,  # آيدي التطبيق الخاص بك
+        details="In Kingdom",                  # النص الأول تحت اسم اللعبة
+        state="Exploring the realm...",        # النص الثاني
         assets={
-            "large_image": IMAGE_URL,
-            "large_text": "Ƙinɣdøm Of Aphamia"  # النص عند التمرير على الصورة
+            "large_image": "logo",             # اسم مفتاح الصورة الذي رفعتها في Developer Portal
+            "large_text": "Ƙinɣdøm Of Aphamia  🏰" # النص الذي يظهر عند وضع الماوس على الصورة
         }
     )
 
-    # تطبيق الحالة (أونلاين + النشاط)
+    # تطبيق النشاط وتحديث الحالة إلى Online
     await bot.change_presence(activity=activity, status=discord.Status.online)
-    print("تم تفعيل حالة اللعبة الوهمية والصورة بنجاح!")
+    print("تم تفعيل حالة اللعبة والصورة بنجاح!")
 
 if __name__ == "__main__":
     if TOKEN:
         bot.run(TOKEN)
     else:
-        print("خطأ: لم يتم العثور على التوكين في ملف .env")
+        print("خطأ: لم يتم العثور على DISCORD_TOKEN داخل ملف .env")
