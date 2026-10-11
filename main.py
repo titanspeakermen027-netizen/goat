@@ -1,68 +1,39 @@
-import json
-import os
 import discord
+from discord.ext import commands
+import os
 from dotenv import load_dotenv
 
-# تحميل المتغيرات من ملف .env
 load_dotenv()
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-TARGET_CHANNEL_ID = 1538885237159891054
-COUNTER_FILE = "message_counter.json"
+bot = commands.Bot(command_prefix="!", self_bot=True)
 
-# إنشاء عميل الحساب الشخصي مباشرة بدون Intents لتجنب الخطأ
-client = discord.Client()
-
-def load_counter():
-    """تحميل العداد السابق من الملف لتفادي فقدان التقدم عند إعادة التشغيل"""
-    if os.path.exists(COUNTER_FILE):
-        try:
-            with open(COUNTER_FILE, "r") as f:
-                data = json.load(f)
-                return data.get("count", 0)
-        except Exception:
-            return 0
-    return 0
-
-def save_counter(count):
-    """حفظ العداد الحالي في الملف"""
-    with open(COUNTER_FILE, "w") as f:
-        json.dump({"count": count}, f)
-
-message_count = load_counter()
-
-@client.event
+@bot.event
 async def on_ready():
-    print(f"تم تسجيل الدخول بنجاح باسم: {client.user}")
-    print(f"العداد الحالي للرسائل: {message_count}")
-    print(f"مراقبة جميع الرسائل في القناة المستهدفة: {TARGET_CHANNEL_ID}")
+    print(f"تم تسجيل الدخول بنجاح باسم: {bot.user}")
 
-@client.event
-async def on_message(message):
-    global message_count
+    # رابط صورة اللعبة المرفق
+    IMAGE_URL = "https://images-ext-1.discordapp.net/external/9BnrFcgAy-5tAi0-SbVovH7C8hJkp3XeaWP2Feh-uAw/https/cdn.discordapp.com/icons/1412468404954337423/b8e95eae828bcf31cfbdb91e7ea0cabc.webp"
 
-    # التأكد من أن الرسالة في القناة المستهدفة فقط
-    if message.channel.id == TARGET_CHANNEL_ID:
-        
-        # تجاهل رسالة النقطة نفسها التي يرسلها حسابك لتفادي زيادة العداد بها
-        if message.author.id == client.user.id and message.content == ".":
-            return
+    # إنشاء النشاط وتحديد الاسم والصورة
+    activity = discord.Activity(
+        type=discord.ActivityType.playing,
+        name="Ƙinɣdøm Of Aphamia  🏰",
+        details="In Kingdom",  # النص الذي يظهر تحت اسم اللعبة (اختياري)
+        state="Exploring the realm...",  # النص الفرعي الثاني (اختياري)
+        assets={
+            "large_image": IMAGE_URL,
+            "large_text": "Ƙinɣdøm Of Aphamia"  # النص عند التمرير على الصورة
+        }
+    )
 
-        message_count += 1
-        save_counter(message_count)
-        
-        print(f"رسالة جديدة من [{message.author.name}]. العدد الإجمالي بالقناة: {message_count}")
+    # تطبيق الحالة (أونلاين + النشاط)
+    await bot.change_presence(activity=activity, status=discord.Status.online)
+    print("تم تفعيل حالة اللعبة الوهمية والصورة بنجاح!")
 
-        # التحقق مما إذا كان إجمالي رسائل القناة قد وصل لمضاعفات الـ 100
-        if message_count % 100 == 0:
-            try:
-                await message.channel.send(".")
-                print(f"تم إرسال نقطة (.) بعد بلوغ القناة {message_count} رسالة.")
-            except Exception as e:
-                print(f"حدث خطأ أثناء إرسال النقطة: {e}")
-
-# تشغيل البوت بالحساب الشخصي
-if TOKEN:
-    client.run(TOKEN)
-else:
-    print("خطأ: لم يتم العثور على التوكن في ملف .env")
+if __name__ == "__main__":
+    if TOKEN:
+        bot.run(TOKEN)
+    else:
+        print("خطأ: لم يتم العثور على التوكين في ملف .env")
