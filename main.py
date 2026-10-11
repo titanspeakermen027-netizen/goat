@@ -10,7 +10,10 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = 1538885237159891054
 COUNTER_FILE = "message_counter.json"
 
-client = discord.Client()
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
 
 def load_counter():
     """تحميل العداد السابق من الملف لتفادي فقدان التقدم عند إعادة التشغيل"""
@@ -33,34 +36,34 @@ message_count = load_counter()
 @client.event
 async def on_ready():
     print(f"تم تسجيل الدخول بنجاح باسم: {client.user}")
-    print(f"العداد الحالي للرسائل المرسلة: {message_count}")
-    print(f"مراقبة القناة المستهدفة: {TARGET_CHANNEL_ID}")
+    print(f"العداد الحالي للرسائل: {message_count}")
+    print(f"مراقبة جميع الرسائل في القناة المستهدفة: {TARGET_CHANNEL_ID}")
 
 @client.event
 async def on_message(message):
     global message_count
 
-    # التأكد من أن الرسالة صدرت منك شخصياً وفي القناة المستهدفة فقط
-    if message.author.id == client.user.id and message.channel.id == TARGET_CHANNEL_ID:
+    # التأكد من أن الرسالة في القناة المستهدفة فقط
+    if message.channel.id == TARGET_CHANNEL_ID:
         
-        # تجاهل الرسالة إذا كانت هي النقطة التي أرسلها الحساب بنفسه لكي لا تحسب ضمن العداد
-        if message.content == ".":
+        # تجاهل رسالة النقطة نفسها التي يرسلها حسابك لتفادي زيادة العداد بها
+        if message.author.id == client.user.id and message.content == ".":
             return
 
         message_count += 1
         save_counter(message_count)
         
-        print(f"تم إرسال رسالة جديدة. العدد الحالي: {message_count}")
+        print(f"رسالة جديدة من [{message.author.name}]. العدد الإجمالي بالقناة: {message_count}")
 
-        # التحقق مما إذا كان العدد قد وصل إلى مضاعفات الـ 100
+        # التحقق مما إذا كان إجمالي رسائل القناة قد وصل لمضاعفات الـ 100
         if message_count % 100 == 0:
             try:
                 await message.channel.send(".")
-                print(f"تم إرسال نقطة (.) بعد بلوغ {message_count} رسالة.")
+                print(f"تم إرسال نقطة (.) بعد بلوغ القناة {message_count} رسالة.")
             except Exception as e:
                 print(f"حدث خطأ أثناء إرسال النقطة: {e}")
 
-# تشغيل البوت باستخدام التوكن المستورد من ملف .env
+# تشغيل البوت
 if TOKEN:
     client.run(TOKEN)
 else:
