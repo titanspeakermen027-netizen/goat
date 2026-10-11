@@ -14,7 +14,7 @@ async def on_ready():
     print(f"تم تسجيل الدخول بنجاح باسم: {bot.user}")
 
     # رابط صورة اللعبة المرفق
-    IMAGE_URL = "https://images-ext-1.discordapp.net/external/9BnrFcgAy-5tAi0-SbVovH7C8hJkp3XeaWP2Feh-uAw/https/cdn.discordapp.com/icons/1412468404954337423/b8e95eae828bcf31cfbdb91e7ea0cabc.webp"
+    IMAGE_URL = "https://cdn.discordapp.com/attachments/1538885237159891054/1558942913063559318/b8e95eae828bcf31cfbdb91e7ea0cabc.webp?ex=6acd463a&is=6acbf4ba&hm=117099c87620a2622f937722159bc7f1301ac4150f7f9f0ab579b7b17cd58568&"
 
     # إنشاء النشاط وتحديد الاسم والصورة
     activity = discord.Activity(
