@@ -10,10 +10,8 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 TARGET_CHANNEL_ID = 1538885237159891054
 COUNTER_FILE = "message_counter.json"
 
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(intents=intents)
+# إنشاء عميل الحساب الشخصي مباشرة بدون Intents لتجنب الخطأ
+client = discord.Client()
 
 def load_counter():
     """تحميل العداد السابق من الملف لتفادي فقدان التقدم عند إعادة التشغيل"""
@@ -63,8 +61,8 @@ async def on_message(message):
             except Exception as e:
                 print(f"حدث خطأ أثناء إرسال النقطة: {e}")
 
-# تشغيل البوت
+# تشغيل البوت بالحساب الشخصي
 if TOKEN:
-    client.run(TOKEN)
+    client.run(TOKEN, bot=False)
 else:
     print("خطأ: لم يتم العثور على التوكن في ملف .env")
