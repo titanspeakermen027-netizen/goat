@@ -19,9 +19,9 @@ async def on_ready():
     # إنشاء النشاط وتحديد الاسم والصورة
     activity = discord.Activity(
         type=discord.ActivityType.playing,
-        name="Ƙinɣdøm Of Aphamia  🏰",
-        details="In Kingdom",  # النص الذي يظهر تحت اسم اللعبة (اختياري)
-        state="Exploring the realm...",  # النص الفرعي الثاني (اختياري)
+        name="شششششش انا عمك",
+        details="مالي دخل",  # النص الذي يظهر تحت اسم اللعبة (اختياري)
+        state="قلت لك",  # النص الفرعي الثاني (اختياري)
         assets={
             "large_image": IMAGE_URL,
             "large_text": "Ƙinɣdøm Of Aphamia"  # النص عند التمرير على الصورة
