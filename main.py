@@ -56,7 +56,7 @@ async def on_message(message):
         # التحقق مما إذا كان إجمالي رسائل القناة قد وصل لمضاعفات الـ 100
         if message_count % 100 == 0:
             try:
-                await message.channel.send(".")
+                await message.channel.send("باك")
                 print(f"تم إرسال نقطة (.) بعد بلوغ القناة {message_count} رسالة.")
             except Exception as e:
                 print(f"حدث خطأ أثناء إرسال النقطة: {e}")
