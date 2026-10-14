@@ -1,68 +1,39 @@
-import json
 import os
 import discord
 from dotenv import load_dotenv
 
-# تحميل المتغيرات من ملف .env
+# تحميل البيانات من ملف .env
 load_dotenv()
+
+# قراءة التوكن من متغيرات البيئة
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-TARGET_CHANNEL_ID = 1538885237159891054
-COUNTER_FILE = "message_counter.json"
-
-# إنشاء عميل الحساب الشخصي مباشرة بدون Intents لتجنب الخطأ
 client = discord.Client()
-
-def load_counter():
-    """تحميل العداد السابق من الملف لتفادي فقدان التقدم عند إعادة التشغيل"""
-    if os.path.exists(COUNTER_FILE):
-        try:
-            with open(COUNTER_FILE, "r") as f:
-                data = json.load(f)
-                return data.get("count", 0)
-        except Exception:
-            return 0
-    return 0
-
-def save_counter(count):
-    """حفظ العداد الحالي في الملف"""
-    with open(COUNTER_FILE, "w") as f:
-        json.dump({"count": count}, f)
-
-message_count = load_counter()
 
 @client.event
 async def on_ready():
     print(f"تم تسجيل الدخول بنجاح باسم: {client.user}")
-    print(f"العداد الحالي للرسائل: {message_count}")
-    print(f"مراقبة جميع الرسائل في القناة المستهدفة: {TARGET_CHANNEL_ID}")
 
 @client.event
-async def on_message(message):
-    global message_count
+async def on_raw_reaction_add(payload):
+    # يتجاهل التفاعلات الصادرة من حسابك لتجنب التكرار
+    if payload.user_id == client.user.id:
+        return
 
-    # التأكد من أن الرسالة في القناة المستهدفة فقط
-    if message.channel.id == TARGET_CHANNEL_ID:
+    try:
+        # جلب القناة والرسالة
+        channel = await client.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
         
-        # تجاهل رسالة النقطة نفسها التي يرسلها حسابك لتفادي زيادة العداد بها
-        if message.author.id == client.user.id and message.content == ".":
-            return
-
-        message_count += 1
-        save_counter(message_count)
+        # إضافة نفس الرياكشن
+        await message.add_reaction(payload.emoji)
+        print(f"تمت إضافة الرياكشن {payload.emoji} على الرسالة: {message.id}")
         
-        print(f"رسالة جديدة من [{message.author.name}]. العدد الإجمالي بالقناة: {message_count}")
+    except Exception as e:
+        print(f"حدث خطأ أثناء إضافة الرياكشن: {e}")
 
-        # التحقق مما إذا كان إجمالي رسائل القناة قد وصل لمضاعفات الـ 100
-        if message_count % 100 == 0:
-            try:
-                await message.channel.send("باك")
-                print(f"تم إرسال نقطة (.) بعد بلوغ القناة {message_count} رسالة.")
-            except Exception as e:
-                print(f"حدث خطأ أثناء إرسال النقطة: {e}")
-
-# تشغيل البوت بالحساب الشخصي
-if TOKEN:
-    client.run(TOKEN)
+# التحقق من وجود التوكن قبل التشغيل
+if not TOKEN:
+    print("خطأ: لم يتم العثور على DISCORD_TOKEN في ملف .env")
 else:
-    print("خطأ: لم يتم العثور على التوكن في ملف .env")
+    client.run(TOKEN)
